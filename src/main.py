@@ -85,17 +85,12 @@ def get_friend_ids(user_id):
     return [entry[FRIEND_ID] for entry in friends]
 
 def get_user_data(personal_data):
-    name = personal_data['given_name']
-    surname = personal_data['family_name']
-    patronymic = personal_data['patronymic']
+    name = str(personal_data['given_name'])
+    surname = str(personal_data['family_name'])
+    patronymic = str(personal_data['patronymic'])
     print(name, surname, patronymic)
 
-    user_data = db.select(
-                        'user',
-                        None,
-                        values=(name, surname, patronymic),
-                        index='secondary'
-    )
+    user_data = db.select('user', (name, surname, patronymic), index=1)
     print(list(user_data))
     if len(user_data) == 1:
         return user_data[0]
