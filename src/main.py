@@ -106,7 +106,7 @@ def get_user_data(personal_data):
             phone = personal_data['phone']
         except KeyError:
             phone = '-'
-    user_data = db.insert('user', (user_id, name, surname, patronymic, birthdate, DEFAULT_AVATAR, 9.9, personal_data['email'], phone, True, '-', '-'))
+    user_data = db.insert('user', (user_id, name, surname, patronymic, birthdate, DEFAULT_AVATAR, 9.9, personal_data['email'], phone, False, '-', '-'))
     return user_data[0]
 
 
