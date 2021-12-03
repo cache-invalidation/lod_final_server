@@ -132,6 +132,10 @@ def get_publication_impl(user_id, fr, to, sentiment, type):
 
     return pubs
 
+def new_id(space):
+    entries = db.select(space)
+    return len(entries) + 1
+
 def gather_personal_data(token):
     headers = CaseInsensitiveDict()
     headers["Accept"] = "application/json"
@@ -202,6 +206,16 @@ def checkvk(token):
 
     vk_account = db.select('vk', None, values=(user_id), index='secondary', limit=1)
     return len(vk_account) > 0
+
+@api.dispatcher.add_method
+def addvk(token, id):
+    personal_data = gather_personal_data(token)
+
+    if personal_data is None:
+        return 'Auth error'
+    user_id = get_user_data(personal_data)[0]
+    db.insert('vk', (new_id('vk'), user_id, id))
+    return 'OK'
 
 @api.dispatcher.add_method
 def get_publications(token, fr, to, sentiment, type):
