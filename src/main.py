@@ -1,6 +1,6 @@
 import json
 
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 from jsonrpc.backend.flask import api
 
