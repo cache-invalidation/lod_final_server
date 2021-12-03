@@ -1,4 +1,5 @@
 import json
+from os import access
 import requests
 import tarantool
 
@@ -166,7 +167,6 @@ def gather_personal_data(token):
     return json.loads(response.text)
 
 @app.route('/authenticate', methods=['GET'])
-@cross_origin()
 def authenticator():
     def decoder(str): return json.loads(str.decode())
 
@@ -187,7 +187,7 @@ def authenticator():
 
     data = {
         'code': code,
-        'redirect_uri': 'http://127.0.0.1:5000/authenticate',
+        'redirect_uri': 'http://192.168.31.134:5000/authenticate',
         'grant_type': 'authorization_code',
     }
 
@@ -195,7 +195,13 @@ def authenticator():
 
     awaiting_tokens[session_state] = access_token
 
-    return 'Совсем скоро это окно закроется...'
+    return """<html><body>
+    Эта страница скоро закроется...
+    <script>
+    window.opener.postMessage('{}', '*');
+    console.log("Sent message to parent");
+    </script>
+    </body></html>""".format(access_token)
 
 @api.dispatcher.add_method
 def get_access_token(session_state):
@@ -205,6 +211,7 @@ def get_access_token(session_state):
     token = awaiting_tokens[session_state]
     del awaiting_tokens[session_state]
     return {'status': 1, 'access_token': token}
+
 
 @api.dispatcher.add_method
 def get_user_info(token):
