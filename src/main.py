@@ -26,6 +26,7 @@ cors = CORS(app, resource={
 })
 
 TIONIX_URL = 'https://tvscp.tionix.ru/realms/master/protocol/openid-connect/userinfo'
+DEFAULT_AVATAR = 'https://iupac.org/wp-content/uploads/2018/05/default-avatar.png'
 
 db = tarantool.Connection(TARANTOOL_IP, TARANTOOL_PORT)
 
@@ -86,15 +87,33 @@ def get_user_data(personal_data):
     name = personal_data['given_name']
     surname = personal_data['family_name']
     patronymic = personal_data['patronymic']
+    print(name, surname, patronymic)
 
     user_data = db.select(
                         'user',
                         None,
                         values=(name, surname, patronymic),
-                        index='secondary',
-                        limit=1
-    )[0]
-    return user_data
+                        index='secondary'
+    )
+    print(list(user_data))
+    if len(user_data) == 1:
+        return user_data[0]
+
+    # User wasn't registered, let's place his data into database
+    user_id = new_id('user')
+    birthdate_parts = reversed(personal_data['birthdate'].split('/'))
+    birthdate = '/'.join(birthdate_parts)
+    phone = None
+    try:
+        phone = personal_data['mobile']
+    except KeyError:
+        try:
+            phone = personal_data['phone']
+        except KeyError:
+            phone = '-'
+    user_data = db.insert('user', (user_id, name, surname, patronymic, birthdate, DEFAULT_AVATAR, 9.9, personal_data['email'], phone, True, '-', '-'))
+    return user_data[0]
+
 
 def get_mention_impl(user_id, fr, to, sentiment):
     ment = list(db.select(
