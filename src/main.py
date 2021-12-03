@@ -32,6 +32,20 @@ db = tarantool.Connection(TARANTOOL_IP, TARANTOOL_PORT)
 
 awaiting_tokens = dict()
 
+def get_user_data(personal_data):
+    name = personal_data['given_name']
+    surname = personal_data['family_name']
+    patronymic = personal_data['patronymic']
+
+    user_data = db.select(
+                        'user',
+                        None,
+                        values=(name, surname, patronymic),
+                        index='secondary',
+                        limit=1
+    )[0]
+    return user_data
+
 def gather_personal_data(token):
     headers = CaseInsensitiveDict()
     headers["Accept"] = "application/json"
@@ -90,17 +104,23 @@ def get_user_info(token):
 
     if personal_data is None:
         return 'Auth error'
+    return get_user_data(personal_data)
 
-    name = personal_data['given_name']
-    surname = personal_data['family_name']
-    patronymic = personal_data['patronymic']
 
-    user_data = db.select(
-                        'user',
-                        None,
-                        values=(name, surname, patronymic),
-                        index='secondary',
-                        limit=1
-    )[0]
 
-    return user_data
+@api.dispatcher.add_method
+def get_publications(token, fr, to, sentiment, type):
+    personal_data = gather_personal_data(token)
+
+    if personal_data is None:
+        return 'Auth error'
+    user_id = get_user_data(personal_data)[0]
+
+    pubs = db.select(
+                    'publication',
+                    None,
+                    values=(user_id),
+                    index='secondary'
+    )
+
+    return {'publications': list(pubs)}
