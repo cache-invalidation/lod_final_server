@@ -1,4 +1,6 @@
 import json
+import requests
+from requests.structures import CaseInsensitiveDict
 
 from flask import Flask, request
 from flask_cors import CORS, cross_origin
@@ -20,11 +22,21 @@ cors = CORS(app, resource={
     }
 })
 
+TIONIX_URL = 'https://tvscp.tionix.ru/realms/master/protocol/openid-connect/userinfo'
 
 # Stuff for authentication via Tionix Virtual Security
 
 awaiting_tokens = dict()
 
+def gather_personal_data(token):
+    headers = CaseInsensitiveDict()
+    headers["Accept"] = "application/json"
+    headers["Authorization"] = "Bearer " + token
+    response = requests.get(TIONIX_URL, headers=headers)
+
+    if response.status_code != 200:
+        return None
+    return json.loads(response.text)
 
 @app.route('/authenticate', methods=['GET'])
 @cross_origin()
@@ -67,3 +79,12 @@ def get_access_token(session_state):
     token = awaiting_tokens[session_state]
     del awaiting_tokens[session_state]
     return {'status': 1, 'access_token': token}
+
+@api.dispatcher.add_method
+def get_user_info(token):
+    personal_data = gather_personal_data(token)
+
+    if personal_data is None:
+        return 'Auth error'
+    print(personal_data['given_name'])
+    return 'OK'
