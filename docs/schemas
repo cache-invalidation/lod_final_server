@@ -1,0 +1,136 @@
+__________________
+Database model
+------------------
+
+USERS: (box.space.user)
+id: unsigned
+name: string
+surname: string
+patronymic: string
+date_of_birth: string
+avatar: string
+estimate: double
+email: string
+phone: string
+sex: boolean
+city: string
+education: string
+
+PUBLICATIONS: (box.space.publication)
+id: unsigned
+user_id: unsigned
+type(photo/post): unsigned
+sentiment: unsigned
+date: string
+link: string
+content(здесь будет тайтл): string
+
+MENTIONS: (box.space.mention)
+id: unsigned
+user_id: unsigned
+sentiment: unsigned
+date: string
+link: string
+content: string
+
+FRIENDS: (box.space.friend)
+id: unsigned (просто id  самой entry)
+first_user_id: unsigned
+second_user_id: unsigned
+
+
+------------------
+RPC calls:
+на все результаты возвращаем либо результат, либо
+{
+error: 'invalid token'
+}
+
+Methods:
+
+get_user_info(token) ->
+{
+id: unsigned
+name: string
+surname: string
+patronymic: string
+date_of_birth: string
+avatar: string
+estimate: double
+email: string
+phone: string
+sex: boolean
+city: string
+education: string
+}
+
+get_publications(token, from, to, sentiment, type) ->
+{
+  "publications" : [
+    {
+id: unsigned
+user_id: unsigned
+type(photo/post): unsigned
+sentiment: unsigned
+date: string
+link: string
+content(здесь будет тайтл): string (опционально)
+    }
+  ]
+}
+
+get_mentions(token, from, to, sentiment, type) ->
+
+{
+  "mentions" : [
+    {
+id: unsigned
+user_id: unsigned
+sentiment: unsigned
+date: string
+link: string
+content: string (опционально)
+by_friend: unsigned (может быть пуст)
+    }
+  ]
+}
+
+get_friends(token) ->
+
+{
+  "friends": [
+    {
+      id: unsigned
+      avatar: string
+      estimate: double
+    }
+  ]
+  "mean_mentions": double
+  "mean": double double
+}
+
+search(token, from, to, sentiment, type, query) ->
+{
+  "mentions" : [
+    {
+id: unsigned
+user_id: unsigned
+sentiment: unsigned
+date: string
+link: string
+content: string (опционально)
+by_friend: unsigned (может быть пуст)
+    }
+  ]
+  "publications" : [
+    {
+id: unsigned
+user_id: unsigned
+type(photo/post): unsigned
+sentiment: unsigned
+date: string
+link: string
+content(здесь будет тайтл): string (опционально)
+    }
+  ]
+}
