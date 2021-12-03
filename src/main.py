@@ -37,21 +37,30 @@ awaiting_tokens = dict()
 SENTIMENT_PUB = 3
 TYPE_PUB = 2
 DATE_PUB = 4
+CONTENT_PUB = 6
+
+SENTIMENT_MENT = 2
+DATE_MENT = 3
+CONTENT_MENT = 5
 #===================
+
+def filter_query(data, query, content_idx):
+    tokens = set(query.split())
+    return [entry for entry in data if any(token in entry[content_idx] for token in tokens)]
 
 def filter_category(data, category, filter_value):
     return [entry for entry in data if entry[category] == filter_value]
 
-def filter_from(data, fr):
+def filter_from(data, fr, date_idx):
     fr_dt = datetime.strptime(fr, '%Y/%m/%d')
     print(fr_dt)
-    data = [entry for entry in data if datetime.strptime(entry[DATE_PUB], '%Y/%m/%d') > fr_dt]
+    data = [entry for entry in data if datetime.strptime(entry[date_idx], '%Y/%m/%d') > fr_dt]
     return data
 
-def filter_to(data, to):
+def filter_to(data, to, date_idx):
     to_dt = datetime.strptime(to, '%Y/%m/%d')
     print(to_dt)
-    data = [entry for entry in data if datetime.strptime(entry[DATE_PUB], '%Y/%m/%d') < to_dt]
+    data = [entry for entry in data if datetime.strptime(entry[date_idx], '%Y/%m/%d') < to_dt]
     return data
 
 
@@ -69,6 +78,42 @@ def get_user_data(personal_data):
                         limit=1
     )[0]
     return user_data
+
+def get_mention_impl(user_id, fr, to, sentiment):
+    ment = list(db.select(
+                    'mention',
+                    None,
+                    values=(user_id),
+                    index='secondary'
+    ))
+
+    if sentiment is not None:
+        ment = filter_category(ment, SENTIMENT_MENT, sentiment)
+    if fr is not None:
+        ment = filter_from(ment, fr, DATE_MENT)
+    if to is not None:
+        ment = filter_to(ment, to, DATE_MENT)
+
+    return ment
+
+def get_publication_impl(user_id, fr, to, sentiment, type):
+    pubs = list(db.select(
+                    'publication',
+                    None,
+                    values=(user_id),
+                    index='secondary'
+    ))
+
+    if sentiment is not None:
+        pubs = filter_category(pubs, SENTIMENT_PUB, sentiment)
+    if type is not None:
+        pubs = filter_category(pubs, TYPE_PUB, type)
+    if fr is not None:
+        pubs = filter_from(pubs, fr, DATE_PUB)
+    if to is not None:
+        pubs = filter_to(pubs, to, DATE_PUB)
+
+    return pubs
 
 def gather_personal_data(token):
     headers = CaseInsensitiveDict()
@@ -140,20 +185,33 @@ def get_publications(token, fr, to, sentiment, type):
         return 'Auth error'
     user_id = get_user_data(personal_data)[0]
 
-    pubs = list(db.select(
-                    'publication',
-                    None,
-                    values=(user_id),
-                    index='secondary'
-    ))
+    return {'publications': get_publication_impl(user_id, fr, to, sentiment, type)}
 
-    if sentiment is not None:
-        pubs = filter_category(pubs, SENTIMENT_PUB, sentiment)
-    if type is not None:
-        pubs = filter_category(pubs, TYPE_PUB, type)
-    if fr is not None:
-        pubs = filter_from(pubs, fr)
-    if to is not None:
-        pubs = filter_to(pubs, to)
+@api.dispatcher.add_method
+def get_mentions(token, fr, to, sentiment):
+    personal_data = gather_personal_data(token)
 
-    return {'publications': list(pubs)}
+    if personal_data is None:
+        return 'Auth error'
+    user_id = get_user_data(personal_data)[0]
+    return {'mentions': get_mention_impl(user_id, fr, to, sentiment)}
+
+
+@api.dispatcher.add_method
+def search(token, fr, to, sentiment, type, query):
+    personal_data = gather_personal_data(token)
+
+    if personal_data is None:
+        return 'Auth error'
+    user_id = get_user_data(personal_data)[0]
+    mentions = get_mention_impl(user_id, fr, to, sentiment)
+    publications = get_publication_impl(user_id, fr, to, sentiment, type)
+
+    if query is not None:
+        mentions = filter_query(mentions, query, CONTENT_MENT)
+        publications = filter_query(publications, query, CONTENT_PUB)
+
+    return {
+            'mentions': mentions,
+            'publications': publications
+           }
