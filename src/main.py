@@ -79,8 +79,7 @@ def get_friends_data(ids):
 def get_friend_ids(user_id):
     friends = db.select(
                         'friend',
-                        None,
-                        values=(user_id),
+                        (user_id),
                         index='secondary')
     return [entry[FRIEND_ID] for entry in friends]
 
@@ -114,8 +113,7 @@ def get_user_data(personal_data):
 def get_mention_impl(user_id, fr, to, sentiment):
     ment = list(db.select(
                     'mention',
-                    None,
-                    values=(user_id),
+                    (user_id),
                     index='secondary'
     ))
 
@@ -131,8 +129,7 @@ def get_mention_impl(user_id, fr, to, sentiment):
 def get_publication_impl(user_id, fr, to, sentiment, type):
     pubs = list(db.select(
                     'publication',
-                    None,
-                    values=(user_id),
+                    (user_id),
                     index='secondary'
     ))
 
@@ -225,7 +222,7 @@ def checkvk(token):
         return 'Auth error'
     user_id = get_user_data(personal_data)[0]
 
-    vk_account = db.select('vk', None, values=(user_id), index='secondary', limit=1)
+    vk_account = db.select('vk', (user_id), index='secondary', limit=1)
     return len(vk_account) > 0
 
 @api.dispatcher.add_method
