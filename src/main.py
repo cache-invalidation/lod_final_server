@@ -1,5 +1,7 @@
 import json
 import requests
+import tarantool
+
 from requests.structures import CaseInsensitiveDict
 
 from flask import Flask, request
@@ -9,7 +11,7 @@ from jsonrpc.backend.flask import api
 from urllib import parse
 from rauth.service import OAuth2Service
 
-from credentials import CLIENT_ID, CLIENT_SECRET
+from credentials import CLIENT_ID, CLIENT_SECRET, TARANTOOL_IP, TARANTOOL_PORT
 
 app = Flask(__name__)
 app.register_blueprint(api.as_blueprint())
@@ -23,6 +25,8 @@ cors = CORS(app, resource={
 })
 
 TIONIX_URL = 'https://tvscp.tionix.ru/realms/master/protocol/openid-connect/userinfo'
+
+db = tarantool.Connection(TARANTOOL_IP, TARANTOOL_PORT)
 
 # Stuff for authentication via Tionix Virtual Security
 
@@ -86,5 +90,17 @@ def get_user_info(token):
 
     if personal_data is None:
         return 'Auth error'
-    print(personal_data['given_name'])
-    return 'OK'
+
+    name = personal_data['given_name']
+    surname = personal_data['family_name']
+    patronymic = personal_data['patronymic']
+
+    user_data = db.select(
+                        'user',
+                        None,
+                        values=(name, surname, patronymic),
+                        index='secondary',
+                        limit=1
+    )[0]
+
+    return user_data
