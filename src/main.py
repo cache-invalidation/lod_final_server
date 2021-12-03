@@ -187,7 +187,7 @@ def authenticator():
 
     data = {
         'code': code,
-        'redirect_uri': 'http://192.168.31.134:5000/authenticate',
+        'redirect_uri': 'http://45.134.255.154:32086/authenticate',
         'grant_type': 'authorization_code',
     }
 
