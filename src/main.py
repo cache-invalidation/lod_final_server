@@ -3,6 +3,7 @@ import requests
 import tarantool
 
 from requests.structures import CaseInsensitiveDict
+from datetime import datetime
 
 from flask import Flask, request
 from flask_cors import CORS, cross_origin
@@ -35,10 +36,25 @@ awaiting_tokens = dict()
 #==== CONSTANTS ====
 SENTIMENT_PUB = 3
 TYPE_PUB = 2
+DATE_PUB = 4
 #===================
 
 def filter_category(data, category, filter_value):
     return [entry for entry in data if entry[category] == filter_value]
+
+def filter_from(data, fr):
+    fr_dt = datetime.strptime(fr, '%Y/%m/%d')
+    print(fr_dt)
+    data = [entry for entry in data if datetime.strptime(entry[DATE_PUB], '%Y/%m/%d') > fr_dt]
+    return data
+
+def filter_to(data, to):
+    to_dt = datetime.strptime(to, '%Y/%m/%d')
+    print(to_dt)
+    data = [entry for entry in data if datetime.strptime(entry[DATE_PUB], '%Y/%m/%d') < to_dt]
+    return data
+
+
 
 def get_user_data(personal_data):
     name = personal_data['given_name']
@@ -133,7 +149,11 @@ def get_publications(token, fr, to, sentiment, type):
 
     if sentiment is not None:
         pubs = filter_category(pubs, SENTIMENT_PUB, sentiment)
-    if sentiment is not None:
+    if type is not None:
         pubs = filter_category(pubs, TYPE_PUB, type)
+    if fr is not None:
+        pubs = filter_from(pubs, fr)
+    if to is not None:
+        pubs = filter_to(pubs, to)
 
     return {'publications': list(pubs)}
