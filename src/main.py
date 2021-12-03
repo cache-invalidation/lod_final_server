@@ -174,7 +174,6 @@ def authenticator():
 
     return 'Совсем скоро это окно закроется...'
 
-
 @api.dispatcher.add_method
 def get_access_token(session_state):
     if session_state not in awaiting_tokens:
@@ -193,6 +192,16 @@ def get_user_info(token):
     return get_user_data(personal_data)
 
 
+@api.dispatcher.add_method
+def checkvk(token):
+    personal_data = gather_personal_data(token)
+
+    if personal_data is None:
+        return 'Auth error'
+    user_id = get_user_data(personal_data)[0]
+
+    vk_account = db.select('vk', None, values=(user_id), index='secondary', limit=1)
+    return len(vk_account) > 0
 
 @api.dispatcher.add_method
 def get_publications(token, fr, to, sentiment, type):

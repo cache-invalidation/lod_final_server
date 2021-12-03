@@ -2,6 +2,11 @@ __________________
 Database model
 ------------------
 
+VK: (box.space.vk)
+id: unsigned
+user_id: unsigned
+vk_id: unsigned
+
 USERS: (box.space.user)
 id: unsigned
 name: string
