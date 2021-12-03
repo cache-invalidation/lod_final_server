@@ -32,6 +32,14 @@ db = tarantool.Connection(TARANTOOL_IP, TARANTOOL_PORT)
 
 awaiting_tokens = dict()
 
+#==== CONSTANTS ====
+SENTIMENT_PUB = 3
+TYPE_PUB = 2
+#===================
+
+def filter_category(data, category, filter_value):
+    return [entry for entry in data if entry[category] == filter_value]
+
 def get_user_data(personal_data):
     name = personal_data['given_name']
     surname = personal_data['family_name']
@@ -116,11 +124,16 @@ def get_publications(token, fr, to, sentiment, type):
         return 'Auth error'
     user_id = get_user_data(personal_data)[0]
 
-    pubs = db.select(
+    pubs = list(db.select(
                     'publication',
                     None,
                     values=(user_id),
                     index='secondary'
-    )
+    ))
+
+    if sentiment is not None:
+        pubs = filter_category(pubs, SENTIMENT_PUB, sentiment)
+    if sentiment is not None:
+        pubs = filter_category(pubs, TYPE_PUB, type)
 
     return {'publications': list(pubs)}
