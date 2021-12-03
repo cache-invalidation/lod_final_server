@@ -89,7 +89,7 @@ def get_user_data(personal_data):
     patronymic = str(personal_data['patronymic'])
     print(name, surname, patronymic)
 
-    user_data = db.select('user', (name, surname, patronymic), index=1)
+    user_data = db.select('user', (name, surname, patronymic), index='secondary')
     print(list(user_data))
     if len(user_data) == 1:
         return user_data[0]
@@ -142,7 +142,7 @@ def get_publication_impl(user_id, fr, to, sentiment, type):
     if to is not None:
         pubs = filter_to(pubs, to, DATE_PUB)
 
-    return pubs
+    return list(pubs)
 
 def new_id(space):
     entries = db.select(space)
