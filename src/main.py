@@ -42,6 +42,10 @@ CONTENT_PUB = 6
 SENTIMENT_MENT = 2
 DATE_MENT = 3
 CONTENT_MENT = 5
+FRIEND_MENT = 6
+
+FRIEND_ID = 2
+ESTIMATE_USER = 6
 #===================
 
 def filter_query(data, query, content_idx):
@@ -63,7 +67,20 @@ def filter_to(data, to, date_idx):
     data = [entry for entry in data if datetime.strptime(entry[date_idx], '%Y/%m/%d') < to_dt]
     return data
 
+def get_friends_data(ids):
+    friends = []
+    for friend_id in ids:
+        friends.append(list(db.select('user', friend_id)[0]))
 
+    return friends
+
+def get_friend_ids(user_id):
+    friends = db.select(
+                        'friend',
+                        None,
+                        values=(user_id),
+                        index='secondary')
+    return [entry[FRIEND_ID] for entry in friends]
 
 def get_user_data(personal_data):
     name = personal_data['given_name']
@@ -215,3 +232,33 @@ def search(token, fr, to, sentiment, type, query):
             'mentions': mentions,
             'publications': publications
            }
+
+@api.dispatcher.add_method
+def get_friends(token):
+    personal_data = gather_personal_data(token)
+
+    if personal_data is None:
+        return 'Auth error'
+    user_id = get_user_data(personal_data)[0]
+
+    ids = get_friend_ids(user_id)
+    friends = get_friends_data(ids)
+    estimates = [friend[ESTIMATE_USER] for friend in friends]
+    try:
+        mean = sum(estimates) / len(estimates)
+    except ZeroDivisionError:
+        mean = 10
+
+    mentions = get_mention_impl(user_id, None, None, None)
+    sentiments = []
+    for mention in mentions:
+        if len(mention) == 7 and mention[FRIEND_MENT] is not None:
+            if mention[FRIEND_MENT] in ids:
+                sentiments.append((mention[SENTIMENT_MENT] / 3) * 10)
+
+    try:
+        mean_mentions = sum(sentiments) / len(sentiments)
+    except ZeroDivisionError:
+        mean_mentions = 10
+
+    return {'friends' : friends, 'mean': mean, 'mean_mentions': mean_mentions}
