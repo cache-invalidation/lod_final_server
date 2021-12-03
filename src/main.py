@@ -1,7 +1,7 @@
 import json
 
 from flask import Flask, request
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from jsonrpc.backend.flask import api
 
 from urllib import parse
@@ -27,6 +27,7 @@ awaiting_tokens = dict()
 
 
 @app.route('/authenticate', methods=['GET'])
+@cross_origin()
 def authenticator():
     def decoder(str): return json.loads(str.decode())
 
