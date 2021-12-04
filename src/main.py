@@ -14,6 +14,7 @@ from urllib import parse
 from rauth.service import OAuth2Service
 
 from credentials import CLIENT_ID, CLIENT_SECRET, TARANTOOL_IP, TARANTOOL_PORT
+from threading import Lock
 
 app = Flask(__name__)
 app.register_blueprint(api.as_blueprint())
@@ -30,6 +31,7 @@ TIONIX_URL = 'https://tvscp.tionix.ru/realms/master/protocol/openid-connect/user
 DEFAULT_AVATAR = 'https://iupac.org/wp-content/uploads/2018/05/default-avatar.png'
 
 db = tarantool.Connection(TARANTOOL_IP, TARANTOOL_PORT)
+auth_lock = Lock()
 
 # Stuff for authentication via Tionix Virtual Security
 
@@ -152,7 +154,9 @@ def gather_personal_data(token):
     headers = CaseInsensitiveDict()
     headers["Accept"] = "application/json"
     headers["Authorization"] = "Bearer " + token
+    auth_lock.acquire()
     response = requests.get(TIONIX_URL, headers=headers)
+    auth_lock.release()
 
     if response.status_code != 200:
         return None
